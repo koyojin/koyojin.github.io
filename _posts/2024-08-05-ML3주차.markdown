@@ -158,7 +158,7 @@ test_poly = np.column_stack((test_input ** 2, test_input))
 print(train_poly.shape, test_poly.shape)
 #(42, 2) (14, 2)
 ```
-이후, 선형 회귀 모델에 적용시켜보자.
+이후, 선형 회귀 모델에 적용시켜보자!
 ```python
 lr = LinearRegression()
 lr.fit(train_poly, train_target)
