@@ -1,0 +1,290 @@
+---
+layout: post
+title:  "3. 회귀 알고리즘과 모델 규제"
+date:   2024-08-05 17:26:30 +09:00
+categories: ['ML기초세션']
+---
+
+## 1. k-최근접 이웃 회귀
+
+**회귀**란 무엇인가?   
+이에 대해서는 이전 주차 심화발제로 조사한 내용을 참고하자.   
+
+
+> "회귀(regression)"라는 용어는 원래 19세기 말 통계학자인 프랜시스 골턴(Francis Galton)에 의해 도입되었습니다. 골턴은 키에 대한 연구를 통해 부모와 자식 간의 유전적 특성을 분석하던 중, 부모의 키가 극단적인 경우 자식의 키는 평균으로 "회귀"하는 경향이 있다는 것을 발견했습니다. 즉, 부모의 키가 매우 크거나 작은 경우에도 자식의 키는 부모보다는 평균에 가까운 키를 갖는 경향이 있다는 것을 의미합니다.
+
+
+위는 회귀분석에서 회귀의 어원에 대한 내용이다. 여기서 주목해야할 점은 우리는 이 '평균'을    찾아낸다는 점이다. 회귀분석 모델들은 이 '평균'을 찾는 과정을 포함하며, 이는 **회귀선**을 찾는 과정이다.
+
+즉, 우리는 주어진 데이터들을 바탕으로 **회귀선**을 찾아내고, 그 회귀선에 기반하여 새로운 데이터에 대한 정답을 찾아내는 것이다. 
+
+### 1-1. k-최근접 이웃 회귀
+k-최근접 이웃 분류 알고리즘과 비슷하지만 다르다.   
+**분류**의 경우에는 주변 이웃의 다수의 값을 바탕으로 새로운 데이터를 분류하지만,    
+**회귀**의 경우에는 이웃의 타겟 수치의 평균을 통해 새로운 데이터의 수치를 예측한다.
+
+![alt text](/assets/images/4-image-1.png)
+
+이제 길이와 무게를 가지는 데이터의 scatter plot을 그려보자.
+```python
+plt.scatter(perch_length, perch_weight)
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+```
+![alt text](/assets/images/4-image-2.png)
+
+**사이킷런의 훈련데이터는 2차원 배열이어야** 하기 때문에, reshape()를 이용해 배열의 크기를 수정해 주어야한다. 2장에서 분류 문제에서는 특성 2개를 이용했지만, 이 회귀 문제에서는 길이 특성 1개만 이용한다.   
+
+train_input, test_input은 (42,)이므로 우리는 이들을 (42,1)로 바꿔주면 된다. 이때 .reshape(42,1)이라고 작성해도되지만, .reshape(-1,1)이라고 작성할 수 있다.   
+이 의미는 -1인 부분의 갯수는 알아서 채우라는 뜻이다. 여기선 42개의 원소를 할당하기 때문에 두번째 크기가 1이기에 앞에 -1의 크기는 42로 결정된다. 비슷한 예로, 만약 .reshape(1,-1)이라면 .reshape(1,42)와 같은 결과를 가진다.
+
+### 1-2. 결정계수
+
+이 데이터를 통해 훈련을 마치고, score 메서드를 통해 확인해 보자.
+```python
+from sklearn.neighbors import KNeighborsRegressor
+knr = KNeighborsRegressor()
+# k-최근접 이웃 회귀 모델을 훈련합니다
+knr.fit(train_input, train_target)
+knr.score(test_input, test_target)
+#0.992809406101064
+```
+이때 score가 산출한 값에 주목해보자. **이건 Accuracy가 아니다.**   
+애당초 수치에 대해서 정확한 숫자를 맞춘다는 것은 불가능하기 때문이다.
+
+이때 사용하는 것이 바로 **결정계수**이다.
+
+![alt text](/assets/images/4-image-4.png)
+
+```python
+from sklearn.metrics import mean_absolute_error
+# 테스트 세트에 대한 예측을 만듭니다
+test_prediction = knr.predict(test_input)
+# 테스트 세트에 대한 평균 절댓값 오차를 계산합니다
+mae = mean_absolute_error(test_target, test_prediction)
+print(mae)
+#19.157142857142862
+```
+이 평균 절댓값 오차라는 것으로 해석해보면, 예측이 평균적으로 19g 정도 타깃값과 다르다는 의미이다.   
+이어서 테스트셋이 아닌 트레인셋을 통한 결정계수를 확인해보면, 0.97정도로 훈련 데이터의 경우가 더 낮은 것을 확인할 수 있다.   
+
+- Score가 
+1. Train Set < Test Set 혹은 둘다 너무 낮은 경우 -> 과소적합(Underfitting)
+2. Train Set >>> Test Set -> 과대적합(Overfitting)
+
+따라서 위의 상황에서는 과소적합이 일어났다. **모델이 단순**하거나 **데이터의 크기가 작으면** 이런 문제가 발생한다.
+
+k-최근접 이웃 알고리즘을 더 복잡하게 만드는 방법 중 하나는 이웃의 수를 줄이는 것이다.
+```python
+# 이웃의 갯수를 3으로 설정합니다
+knr.n_neighbors = 3
+# 모델을 다시 훈련합니다
+knr.fit(train_input, train_target)
+print(knr.score(train_input, train_target))
+#0.9804899950518966
+print(knr.score(test_input, test_target))
+#0.9746459963987609
+```
+이제 정상적인 상황이 되었다!   
+따라서 k-nn에서 과소적합 문제가 발생하면 이웃 수를 줄이고, 과대적합 문제가 발생하면 이웃 수를 늘려보도록 하자.
+
+## 2. 선형회귀
+
+아래의 상황을 보도록 하자. 이웃 수가 3인 k-nn 회귀 모델을 구현했다.   
+그리고 길이가 50cm인 농어의 무게를 예측하였다.
+```python
+from sklearn.neighbors import KNeighborsRegressor
+
+knr = KNeighborsRegressor(n_neighbors=3)
+# k-최근접 이웃 회귀 모델을 훈련합니다
+knr.fit(train_input, train_target)
+print(knr.predict([[50]]))
+#[1033.33333333]
+```
+실제 무게는 1.5kg 정도라고 한다. 왜 이런 문제가 발생하는 것일까?
+```python
+# 50cm 농어의 이웃을 구합니다
+distances, indexes = knr.kneighbors([[50]])
+
+# 훈련 세트의 산점도를 그립니다
+plt.scatter(train_input, train_target)
+# 훈련 세트 중에서 이웃 샘플만 다시 그립니다
+plt.scatter(train_input[indexes], train_target[indexes], marker='D')
+# 50cm 농어 데이터
+plt.scatter(50, 1033, marker='^')
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+```
+![alt text](/assets/images/4-image-5.png)   
+예상가능하듯이, 이미 학습한 데이터를 기준으로 가까이 있는 값들의 범위안에서 수치를 예측하기 때문이다. 즉 다시 말하면 훈련 데이터를 넘어서는 경향성을 예측하지 못한다는 것이다.   
+**이런 식이면 농어가 100cm여도 무게가 1kg를 크게 넘어서지 못할 것이다!**
+
+### 2-1. 선형 회귀
+**선형 회귀(Linear Regression)** 은 이 문제를 보완한다.   
+특성이 하나인 경우, 데이터를 가장 잘 설명해주는 하나의 직선을 학습하는 알고리즘이다.
+```python
+from sklearn.linear_model import LinearRegression
+lr = LinearRegression()
+# 선형 회귀 모델 훈련
+lr.fit(train_input, train_target)
+# 50cm 농어에 대한 예측
+print(lr.predict([[50]]))
+#[1241.83860323]
+```
+선형 회귀를 이용해 아까 50cm 농어를 다시 예측한 것이다. 아까보다 말이 되는 무게가 나온 것을 확인할 수 있다!   
+또한 모델은 아래와 같은 회귀선을 찾았다.
+```python
+print(lr.coef_, lr.intercept_)
+#[39.01714496] -709.0186449535477
+```
+![alt text](/assets/images/4-image-6.png)
+
+이때 coef_ 와 intercept_ 는 기울기와 절편을 의미한다.  
+> 이러한 값은 모델이 학습을 통해서 스스로 찾아낸 모델 파라미터이다. 많은 알고리즘들이 이 모델 파라미터를 찾는 **모델 기반 학습**을 진행하며, 그렇지 않은 단순히 train set을 저장하는 k-최근접 이웃같은 알고리즘을 **사례 기반 학습**이라고 부른다.
+
+이 모델의 score는 훈련 세트와 테스트 세트 각각 0.93과 0.82이다.   
+둘 다 낮은 수치라고 할 수 있다. 이를 개선해 보도록 하자.
+
+### 2-2. 다항 회귀
+
+위에서 살펴본 회귀선은 직선이다. 당연한 이야기지만, 만약 회귀선이 곡선이라면 더 설명력이 높아지지 않을까?
+
+이차함수꼴의 곡선이 되기위해, 제곱항과 일차항을 만들어준다.
+```python
+train_poly = np.column_stack((train_input ** 2, train_input))
+test_poly = np.column_stack((test_input ** 2, test_input))
+print(train_poly.shape, test_poly.shape)
+#(42, 2) (14, 2)
+```
+이후, 선형 회귀 모델에 적용시켜보자.
+```python
+lr = LinearRegression()
+lr.fit(train_poly, train_target)
+
+print(lr.predict([[50**2, 50]]))
+#[1573.98423528]
+print(lr.coef_, lr.intercept_)
+#[  1.01433211 -21.55792498] 116.0502107827827
+```
+아까와 다르게 1.5kg으로 실측값과 굉장히 유사한 결과가 나왔고, **기울기(가중치)** 가 아까와 달리 이차항 계수와 일차항 계수 두가지가 나왔다. 따라서 아래와 같이 표현이 가능하다.
+
+![alt text](/assets/images/4-image-7.png)
+![alt text](/assets/images/4-image-8.png)
+
+```python
+print(lr.score(train_poly, train_target))
+print(lr.score(test_poly, test_target))
+#0.9706807451768623
+#0.9775935108325122
+```
+이렇듯이 여러 개의 항, 다항식을 사용한 선형 회귀를 **다항 회귀**라고 부른다.
+
+## 3. 특성 공학과 규제
+위의 score를 보면 아직 과소적합 문제가 해결되지 않았다.
+이를 해결하기 위해 **다중회귀**를 활용해 보자.
+
+### 3-1. 다중 회귀
+**다중 회귀**는 여러 개의 특성을 이용한 선형 회귀를 말한다. 이건 다항이랑은 다른 개념이다.특성이 늘어나 **차원**이 하나 늘어나는 개념이기 때문이다. 헷갈리지 말도록 하자.
+
+![alt text](/assets/images/4-image-11.png)
+
+**특성 공학**이란 기존의 특성을 사용해 새로운 특성을 만들어 내는 것이다.   
+이 예제에서는 농어 길이 X 농어 높이를 새로운 특성으로 만든다.
+
+```python
+from sklearn.model_selection import train_test_split
+
+train_input, test_input, train_target, test_target = train_test_split(perch_full, perch_weight, random_state=42)
+```
+### 3-2. 변환기
+perch_full 데이터에는 길이, 높이, 두께로 총 3개의 특성이 있다.   
+이때, PolynomialFeatures라는 사이킷런 **변환기**를 사용할 것이다. 변환기는 특성을 전처리하거나 만드는 클래스를 의미한다.
+
+```python
+from sklearn.preprocessing import PolynomialFeatures
+poly = PolynomialFeatures()
+poly.fit([[2, 3]])
+print(poly.transform([[2, 3]]))
+#[[1. 2. 3. 4. 6. 9.]]
+poly = PolynomialFeatures(include_bias=False)
+poly.fit([[2, 3]])
+print(poly.transform([[2, 3]]))
+#[[2. 3. 4. 6. 9.]]
+```
+위에서는 예시인데, 이는 2가지 특성을 6가지 특성으로 늘린 것이다.   
+PolynomialFeatures 클래스는 각 특성의 제곱, 서로의 곱을 항으로 추가한다. 그렇다면 1은 무엇인가?
+
+1은 쉽게 생각해서 선형 방정식의 절편의 계수이다. 상수항은 절편*1이라는 의미이다. 하지만 사이킷런의 선형 모델에서 필요하지 않기에 include_bias=False로 지정한다.
+
+같은 방식으로 원래 3개의 특성이 있는 농어 예제 문제에 변환기를 적용시켰다.
+```python
+poly = PolynomialFeatures(include_bias=False)
+
+poly.fit(train_input)
+train_poly = poly.transform(train_input)
+print(train_poly.shape)
+#(42, 9)
+poly.get_feature_names_out()
+#array(['x0', 'x1', 'x2', 'x0^2', 'x0 x1', 'x0 x2', 'x1^2', 'x1 x2',
+#       'x2^2'], dtype=object)
+test_poly = poly.transform(test_input)
+```
+
+이렇게 9개의 특성으로 LinearRegression을 실행하면,    
+train set은 0.99, test set은 0.97의 높은 score를 얻을 수 있게 된다! 과소적합 문제 또한 해결되었다.
+```python
+poly = PolynomialFeatures(degree=5, include_bias=False)
+```
+degree 파라미터를 수정해 5제곱까지 특성을 만들 경우, 특성이 55개가 나온다. 당연하게 과대적합 문제가 발생한다.  
+
+### 3-3. 규제
+**규제**는 이런 과대적합 문제를 피하기 위한 것이다. 선형 회귀 모델의 경우 특성에 곱해지는 계수의 크기를 줄인다.
+
+위에서 55개의 특성을 만들었다는 가정하에, 문제를 해결해보자.
+일반적으로 선형 회귀 모델에 규제를 적용할 때는 정규화를 선행해야 한다.
+```python
+from sklearn.preprocessing import StandardScaler
+
+ss = StandardScaler()
+ss.fit(train_poly)
+
+train_scaled = ss.transform(train_poly)
+test_scaled = ss.transform(test_poly)
+```
+
+위의 과정은, PolynomialFeatures로 만든 데이터를 StandardScaler로 정규화한 것이다.   
+이런 규제를 거친 모델을 **릿지, 라쏘** 모델이라고 한다.
+
+### 3-4. 릿지 & 라쏘 모델
+릿지는 규제로 계수의 제곱값을 시준으로, 라쏘는 계수의 절대값을 기준으로 사용한다.   
+일반적으로 릿지가 조금 더 선호된다.
+- 릿지(Ridge)
+```python
+from sklearn.linear_model import Ridge
+
+ridge = Ridge()
+ridge.fit(train_scaled, train_target)
+print(ridge.score(train_scaled, train_target))
+#0.9896101671037343
+print(ridge.score(test_scaled, test_target))
+#0.9790693977615387
+```
+이때 alpha라는 파라미터를 통해 규제 강도를 설정할 수 있다. 크면 과소적합을, 작으면 과대적합을 유도한다. 아래와 같이 alpha 값과 결정계수를 비교하여 최적의 alpha를 찾을 수 있다. (파란색은 train set, 주황색은 test set)
+
+![alt text](/assets/images/4-image-12.png)
+
+- 라쏘(Lasso)
+```python
+from sklearn.linear_model import Lasso
+
+lasso = Lasso()
+lasso.fit(train_scaled, train_target)
+print(lasso.score(train_scaled, train_target))
+#0.989789897208096
+print(lasso.score(test_scaled, test_target))
+#0.9800593698421883
+```
+라쏘 역시 alpha를 통해 규제 강도를 조절할 수 있다.   
+참고로, 라쏘의 경우 특정 계수를 아예 0으로 만들 수도 있다.
