@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "6. 비지도 학습"
-date:   2024-08-27 13:50:30 +09:00
+date:   2024-08-27 16:12:30 +09:00
 categories: ['ML기초세션']
 ---
 ## 1. 군집 학습
@@ -16,14 +16,14 @@ categories: ['ML기초세션']
  plt.imshow(fruits[0], cmap='gray')
 plt.show()
 ```
-![alt text](image.png)
+![alt text](/assets/images/6-image.png)
 
 위와 같이 100*100픽셀의 과일사진 300장이 fruits에 담겨있다. 흑백 사진인 만큼 각 픽셀은 0~255까지의 정숫값을 가진다. 참고로 0에 가까울 수록 검은색이다.
 ```python
 plt.imshow(fruits[0], cmap='gray_r')
 plt.show()
 ```
-![alt text](image-1.png)
+![alt text](/assets/images/6-image-1.png)
 
 cmap파라미터를 조정할 경우, 흑백이 반전된 상태로도 이미지를 확인할 수 있다.   
 이 그림에서는 검은 부분이 픽셀값이 크다고 이해할 수 있다.
@@ -33,7 +33,7 @@ axs[0].imshow(fruits[100], cmap='gray_r')
 axs[1].imshow(fruits[200], cmap='gray_r')
 plt.show()
 ```
-![alt text](image-2.png)
+![alt text](/assets/images/6-image-2.png)
 
 나머지 과일에 대해서도 이미지를 확인할 수 있다. 이때, 위 코드에서 쓰인 subplot은 matplot의 시각화 함수로, 각 그래프를 배치할 (행,열)의 그림판을 만들어 준다고 이해하면 좋다. 
 
@@ -83,7 +83,7 @@ plt.legend(['apple', 'pineapple', 'banana'])
 plt.show()
 ```
 
-![alt text](image-3.png)
+![alt text](/assets/images/6-image-3.png)
 
 이것은 전체 픽셀의 평균에 대한 분포이다. 바나나는 구분이 되나, 파인애플과 사과는 구분이 되지않는다.    
 즉 전체 픽셀의 평균으로 군집화 시키기는 어려워 보인다.
@@ -96,7 +96,7 @@ axs[1].bar(range(10000), np.mean(pineapple, axis=0))
 axs[2].bar(range(10000), np.mean(banana, axis=0))
 plt.show()
 ```
-![alt text](image-4.png)
+![alt text](/assets/images/6-image-4.png)
 
 무언가 픽셀 단위로 보니, 특정한 형상들이 과일마다 보이는 것 같다!    
 그렇다면 이 1차원 배열을 2차원으로 바꿔보아도 특정한 형상이 보이지 않을까?
@@ -111,7 +111,7 @@ axs[1].imshow(pineapple_mean, cmap='gray_r')
 axs[2].imshow(banana_mean, cmap='gray_r')
 plt.show()
 ```
-![alt text](image-6.png)
+![alt text](/assets/images/6-image-6.png)
 우리가 아는 과일들의 형상이 보이는 것 같다. 이를 활용하면 될 것 같다!
 
 ### 1-3. 평균값과 가까운 이미지 고르기
@@ -129,7 +129,7 @@ for i in range(10):
         axs[i, j].axis('off')
 plt.show()
 ```
-![alt text](image-5.png)
+![alt text](/assets/images/6-image-5.png)
 
 사과 픽셀들의 평균과 오차가 작은 이미지 100개를 시각화하였더니 모두 사과 이미지가 나왔다! 성공적으로 우리가 원하는 바를 이룬 것이다. 이렇게 비슷한 샘플끼리 모으는 과정을 **군집(Clustering)** 이라고 하고, 이렇게 만들어진 그룹을 **Cluster**라고 부른다.
 
@@ -145,7 +145,7 @@ plt.show()
 4. Centroid 변화가 없을 때까지 2-3을 반복한다.
 
 
-![alt text](image-7.png)
+![alt text](/assets/images/6-image-7.png)
 ### 2-1. sklearn을 통한 구현
 실제 sklearn을 통해 k-means clustering을 구현해 보자.
 
@@ -196,10 +196,10 @@ def draw_fruits(arr, ratio=1):
 
 draw_fruits(fruits[km.labels_==0]) # 불리언 인덱싱
 ```
-![alt text](image-9.png)
+![alt text](/assets/images/6-image-9.png)
 
 잘 군집화가 된 것 처럼 보인다. 하지만 km.labels_==2일때는 상황이 조금 다르다. 
-![alt text](image-10.png)
+![alt text](/assets/images/6-image-10.png)
 
 **정확하게 순도 100%로 군집화되지 못했음**을 알 수 있다.   
 하지만 그렇다고 하더라고 타깃 레이블 없이 군집화가 이정도로 이루어진다는 점이 주목할만 하다.
@@ -210,7 +210,7 @@ draw_fruits(fruits[km.labels_==0]) # 불리언 인덱싱
 ```python
 draw_fruits(km.cluster_centers_.reshape(-1, 100, 100), ratio=3)
 ```
-![alt text](image-11.png)
+![alt text](/assets/images/6-image-11.png)
 
 **transform()**은 훈련데이터 샘플에서 각 Centroid까지의 거리를 반환한다.
 참고로, 이 transform()은 2차원 배열을 input으로 기대하기에, 우리는 2차원 배열을 명시적으로 전달해야한다. 이를 위한 방법이 100번째 요소에 대해 알아보고 싶다면, [100]으로 인덱싱을 하는 것이 아니라, [100:101]로 슬라이싱한 값을 전달하는 것이다.
@@ -250,7 +250,7 @@ plt.xlabel('k')
 plt.ylabel('inertia')
 plt.show()
 ```
-![alt text](image-12.png)
+![alt text](/assets/images/6-image-12.png)
 
 대략적으로, 명확하지 않게 제시되긴 하지만 위의 예시에서는 3이라는 것을 알 수 있다.
 
@@ -260,15 +260,15 @@ plt.show()
 차원은 굉장히 중요한 문제이다. 차원은 다른 말로 feature이다. 우리가 여태 활용한 그 feature와 같은 말이다. 우리는 차원을 축소할 것이다. **차원 축소**를 통해 과대 적합과 성능 개선을 기대할 수 있기 때문이다.
 
 주성분 분석은 분산이 큰 방향을 찾는 것이다. 분산이 크다는 것은 데이터를 넓게 표현해준다는 의미이기 때문이다.
-![alt text](image-13.png)
+![alt text](/assets/images/6-image-13.png)
 
 여기에서는 (2,1)이라는 벡터가 가장 데이터의 분산을 크게 설명하지 않는가?   
 바로 이 벡터를 주성분이라고 부른다. 주성분 벡터는 요소가 2개로 원래 데이터의 차원과 동일하지만, 중요한 점은 이 주성분 축을 이용해 원래 데이터의 차원은 축소가 가능하다는 것이다.
-![alt text](image-14.png)
+![alt text](/assets/images/6-image-14.png)
 
 S를 주성분 축에 투영하면 S는 1차원의 점으로 표현할 수 있기 때문이다.
 
-![alt text](image-15.png)
+![alt text](/assets/images/6-image-15.png)
 
 마지막으로 주성분 축에 대해  수직이고 분산이 가장 큰 다음 방향을 찾으면 그게 두번째 주성분이다. 여기서는 2차원이기 때문에 하나의 두번째 주성분 방향이 나온다. 두번째 주성분을 찾는 이유는 첫번째 주성분만으로 불충분할 경우를 위함이다.
 
@@ -296,7 +296,7 @@ print(pca.components_.shape)
 ```python
 draw_fruits(pca.components_.reshape(-1, 100, 100))
 ```
-![alt text](image-16.png)
+![alt text](/assets/images/6-image-16.png)
 
 이제 원래 300개의 데이터를 pca의 tranform() 통해 50개의 차원으로 줄여보자.
 ```python
@@ -319,7 +319,7 @@ for start in [0, 100, 200]:
     draw_fruits(fruits_reconstruct[start:start+100])
     print("\n")
 ```
-![alt text](image-17.png)
+![alt text](/assets/images/6-image-17.png)
 
 이미지들이 50개로 줄었다가 다시 10000개로 늘려졌음에도, 높은 복원률을 보여준다.
 
@@ -330,7 +330,7 @@ print(np.sum(pca.explained_variance_ratio_))
 #0.9215651897863715
 plt.plot(pca.explained_variance_ratio_)
 ```
-![alt text](image-18.png)
+![alt text](/assets/images/6-image-18.png)
 
 ### 3-4. 지도학습에 적용
 
@@ -379,4 +379,4 @@ for label in range(0, 3):
 plt.legend(['apple', 'banana', 'pineapple'])
 plt.show()
 ```
-![alt text](image-19.png)
+![alt text](/assets/images/6-image-19.png)
